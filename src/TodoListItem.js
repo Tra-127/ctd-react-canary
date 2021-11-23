@@ -1,7 +1,7 @@
 import React from "react";
 
-const TodoListItem = (props) => (
-    <li key={props.item.id}>{props.item.title}</li>
+const TodoListItem = ({todo}) => (
+    <li>{todo.title}</li>
 );
 
 export default TodoListItem
