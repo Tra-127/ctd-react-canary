@@ -6,34 +6,66 @@ import AddTodoForm from "./AddTodoForm";
 
 function App() {
 
-    const [todoList, setTodoList] = React.useState([]);
+    const listReducer = (state, action) => {
+        switch (action.type) {
+            case 'TODO_LIST_FETCH_INIT':
+                return {
+                    ...state,
+                    isLoading: true,
+                    isError: false,
+                };
+            case 'TODO_LIST_FETCH_SUCCESS':
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: false,
+                    data: action.payload,
+                };
+            case 'TODO_LIST_FETCH_FAILURE':
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                };
+            default:
+                throw new Error();
+        }
+    };
 
-    const [isLoading, setIsLoading] = React.useState(true);
+    const [todoList, setTodoList] = React.useReducer(
+        listReducer,
+        {data: [], isLoading: false, isError: false}
+    );
 
 
     React.useEffect(() => {
 
-        new Promise((resolve, reject) =>
-            setTimeout(
-                () => resolve({data: {todoList:
-                            JSON.parse(localStorage.getItem('savedTodoList'))
-                }}),
-                2000
-            ),
-        ).then((result) => {
-            setTodoList(JSON.parse(localStorage.getItem('savedTodoList')))
-            setIsLoading(false);
-        }
-        );
+        setTodoList({ type: 'TODO_LIST_FETCH_INIT' });
 
+        const headers = {
+            Authorization: 'Bearer keyFtGqLWD2Fyqz6p'
+        }
+
+        fetch('https://api.airtable.com/v0/appcbHG1yGAqPMKMu/Default', {headers})
+            .then((response) => response.json())
+            .then((result) => {
+                setTodoList({
+                    type: 'TODO_LIST_FETCH_SUCCESS',
+                    payload: result.records,
+                });
+            })
+            .catch(() =>
+                setTodoList({ type: 'TODO_LIST_FETCH_FAILURE' })
+            );
+
+    }, ['https://api.airtable.com/v0/appcbHG1yGAqPMKMu/Default']);
+
+
+    React.useEffect(() => {
+        if(todoList.isLoading = false) {
+            setTodoList('TODO_LIST_FETCH_INIT');
+        }
     }, []);
-
-
-    React.useEffect(() => {
-        if(isLoading == false) {
-            localStorage.setItem('savedTodoList', JSON.stringify(todoList));
-        }
-    }, [todoList]);
 
 
     const  addTodo = (newTodo) => {
@@ -50,10 +82,10 @@ function App() {
             <h1> Todo List </h1>
             <AddTodoForm onAddTodo={addTodo}/>
 
-            {isLoading ? (
+            {todoList.isLoading ? (
                 <p> Loading... </p>
             ):(
-                <TodoList todoList={todoList} onRemoveTodo={removeTodo} />
+                <TodoList todoList={todoList.data} onRemoveTodo={removeTodo} />
             )}
         </>
     );
